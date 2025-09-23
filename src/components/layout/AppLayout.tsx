@@ -23,7 +23,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Main content: bottom row, main column */}
       <main className="lg:col-start-2 lg:col-end-3 lg:row-start-2 lg:row-end-3 pb-8 min-w-0 lg:min-h-0 lg:overflow-auto">
-        <div className="py-6">
+        <div className="py-6 animate-slide-up">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {children}
           </div>

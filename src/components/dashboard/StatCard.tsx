@@ -39,11 +39,11 @@ export const StatCard = ({ title, value, change, icon: Icon, variant = 'indigo' 
   const theme = palette[variant];
   
   return (
-    <div className={`relative overflow-hidden rounded-xl bg-white shadow-sm ring-1 ${theme.ring} transition transform hover:shadow-md hover:-translate-y-0.5`}>
+    <div className={`relative overflow-hidden rounded-xl bg-white shadow-sm ring-1 ${theme.ring} transition-all duration-200 hover:shadow-lg hover:-translate-y-1`}>
       <div className="absolute inset-x-0 top-0 h-1">
-        <div className={`h-full w-full bg-gradient-to-r ${theme.bar}`} />
+        <div className={`h-full w-full bg-gradient-to-r ${theme.bar} transition-all duration-300`} />
       </div>
-      <div className="p-5">
+      <div className="p-6">
         <div className="flex items-start">
           <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${theme.tint}`}>
             <Icon className={`h-6 w-6 ${theme.icon}`} aria-hidden="true" />
@@ -52,7 +52,7 @@ export const StatCard = ({ title, value, change, icon: Icon, variant = 'indigo' 
             <dl>
               <dt className="text-sm font-medium text-gray-500 truncate">{title}</dt>
               <dd className="mt-1 flex items-baseline">
-                <div className="text-2xl font-bold text-gray-900">{value}</div>
+                <div className="text-3xl font-bold text-gray-900 tracking-tight">{value}</div>
               </dd>
             </dl>
           </div>
