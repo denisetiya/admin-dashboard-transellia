@@ -1,8 +1,28 @@
 import { useState } from 'react';
 import { mockSubscriptions } from '../../data/mockData';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import type { SubscriptionFormData } from './SubscriptionForm';
 
-export const SubscriptionList = () => {
+interface SubscriptionListProps {
+  onEdit?: (subscription: Partial<SubscriptionFormData>) => void;
+}
+
+interface Subscription {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  duration: {
+    value: number;
+    unit: string;
+  };
+  features: string[];
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const SubscriptionList = ({ onEdit }: SubscriptionListProps) => {
   const [subscriptions] = useState(mockSubscriptions);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -12,15 +32,37 @@ export const SubscriptionList = () => {
   );
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('id-ID', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'IDR',
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 2,
     }).format(price);
   };
 
   const formatDuration = (duration: { value: number; unit: string }) => {
     return `${duration.value} ${duration.unit}${duration.value > 1 ? 's' : ''}`;
+  };
+
+  const handleEdit = (subscription: Subscription) => {
+    if (onEdit) {
+      // Convert mock data format to form data format
+      const formData: Partial<SubscriptionFormData> = {
+        name: subscription.name,
+        description: subscription.description,
+        price: subscription.price,
+        currency: 'IDR',
+        duration: subscription.duration as SubscriptionFormData['duration'],
+        features: subscription.features,
+        status: subscription.status as SubscriptionFormData['status'],
+        maxStores: 5, // Default values since not in mock data
+        maxProducts: 1000,
+        supportLevel: 'priority',
+        apiAccess: subscription.features.includes('API access'),
+        customDomain: subscription.features.includes('Custom domain'),
+        analytics: 'advanced'
+      };
+      onEdit(formData);
+    }
   };
 
   return (
@@ -108,10 +150,18 @@ export const SubscriptionList = () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button className="text-indigo-600 hover:text-indigo-900 mr-3">
+                  <button 
+                    onClick={() => handleEdit(subscription)}
+                    className="text-indigo-600 hover:text-indigo-900 mr-3 p-1 rounded-lg hover:bg-indigo-50 transition-colors"
+                    title="Edit subscription"
+                  >
                     <PencilIcon className="h-5 w-5" />
                   </button>
-                  <button className="text-red-600 hover:text-red-900">
+                  <button 
+                    onClick={() => console.log('Delete subscription:', subscription.id)}
+                    className="text-red-600 hover:text-red-900 p-1 rounded-lg hover:bg-red-50 transition-colors"
+                    title="Delete subscription"
+                  >
                     <TrashIcon className="h-5 w-5" />
                   </button>
                 </td>
