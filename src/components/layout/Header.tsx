@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext.js';
 import { Bars3Icon, UserCircleIcon, BellIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 

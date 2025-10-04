@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { PencilIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { mockSubscriptions } from '../../data/mockData';
-import type { SubscriptionFormData, Subscription, SubscriptionResponse } from './SubscriptionForm';
+import { apiService, type Subscription } from '../../services/api';
+import type { SubscriptionFormData } from './SubscriptionForm';
 
 interface SubscriptionListProps {
-  onEdit?: (subscription: Partial<SubscriptionFormData>) => void;
+  onEdit?: (subscription: Partial<SubscriptionFormData> & { id: string }) => void;
+  onDelete?: (id: string, name: string) => void;
 }
 
-export const SubscriptionList = ({ onEdit }: SubscriptionListProps) => {
+export const SubscriptionList = ({ onEdit, onDelete }: SubscriptionListProps) => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,30 +22,14 @@ export const SubscriptionList = ({ onEdit }: SubscriptionListProps) => {
   const fetchSubscriptions = async (page: number = 1, limit: number = 10) => {
     try {
       setLoading(true);
-      // In a real app, this would be an API call
-      // const response = await fetch(`/api/subscriptions?page=${page}&limit=${limit}`);
-      // const data: SubscriptionResponse = await response.json();
+      const response = await apiService.getSubscriptions(page, limit);
       
-      // For now, use mock data with pagination
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + limit;
-      const paginatedSubscriptions = mockSubscriptions.slice(startIndex, endIndex);
-      
-      const mockData: SubscriptionResponse = {
-        success: true,
-        data: {
-          subscriptions: paginatedSubscriptions,
-          pagination: {
-            currentPage: page,
-            totalPages: Math.ceil(mockSubscriptions.length / limit),
-            totalItems: mockSubscriptions.length,
-            itemsPerPage: limit
-          }
-        }
-      };
-      
-      setSubscriptions(mockData.data.subscriptions);
-      setPagination(mockData.data.pagination);
+      if (response.success && response.data) {
+        setSubscriptions(response.data.subscriptions);
+        setPagination(response.data.pagination);
+      } else {
+        console.error('Error fetching subscriptions:', response.message);
+      }
     } catch (error) {
       console.error('Error fetching subscriptions:', error);
     } finally {
@@ -58,7 +43,7 @@ export const SubscriptionList = ({ onEdit }: SubscriptionListProps) => {
 
   const filteredSubscriptions = subscriptions.filter(subscription =>
     subscription.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    subscription.description.toLowerCase().includes(searchTerm.toLowerCase())
+    (subscription.description && subscription.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handlePageChange = (page: number) => {
@@ -87,25 +72,76 @@ export const SubscriptionList = ({ onEdit }: SubscriptionListProps) => {
     return `${duration.value} ${duration.unit}${duration.value > 1 ? 's' : ''}`;
   };
 
-  const handleEdit = (subscription: Subscription) => {
+  const handleEdit = async (subscription: Subscription) => {
     if (onEdit) {
-      // Convert data format to form data format
-      const formData: Partial<SubscriptionFormData> = {
-        name: subscription.name,
-        description: subscription.description,
-        price: subscription.price,
-        currency: subscription.currency,
-        duration: subscription.duration as SubscriptionFormData['duration'],
-        features: subscription.features,
-        status: subscription.status as SubscriptionFormData['status'],
-        maxStores: 5, // Default values since not in mock data
-        maxProducts: 1000,
-        supportLevel: 'priority',
-        apiAccess: subscription.features.includes('API access'),
-        customDomain: subscription.features.includes('Custom domain'),
-        analytics: 'advanced'
-      };
-      onEdit(formData);
+      try {
+        // Fetch complete subscription data from backend
+        const response = await apiService.getSubscriptionById(subscription.id);
+        
+        if (response.success && response.data) {
+          const fullSubscriptionData = response.data.subscription;
+          
+          // Convert data format to form data format
+          const formData: Partial<SubscriptionFormData> & { id: string } = {
+            id: fullSubscriptionData.id,
+            name: fullSubscriptionData.name,
+            description: fullSubscriptionData.description || '',
+            price: fullSubscriptionData.price,
+            currency: fullSubscriptionData.currency,
+            duration: fullSubscriptionData.duration as SubscriptionFormData['duration'],
+            features: fullSubscriptionData.features,
+            status: fullSubscriptionData.status as SubscriptionFormData['status'],
+            // Set default values for fields that might not be in the backend
+            maxStores: 5,
+            maxProducts: 1000,
+            supportLevel: 'priority',
+            apiAccess: fullSubscriptionData.features.some(f => f.toLowerCase().includes('api')),
+            customDomain: fullSubscriptionData.features.some(f => f.toLowerCase().includes('domain')),
+            analytics: 'advanced'
+          };
+          onEdit(formData);
+        } else {
+          console.error('Error fetching subscription details:', response.message);
+          // Fall back to using the partial data from the list
+          const formData: Partial<SubscriptionFormData> & { id: string } = {
+            id: subscription.id,
+            name: subscription.name,
+            description: subscription.description || '',
+            price: subscription.price,
+            currency: subscription.currency,
+            duration: subscription.duration as SubscriptionFormData['duration'],
+            features: subscription.features,
+            status: subscription.status as SubscriptionFormData['status'],
+            maxStores: 5,
+            maxProducts: 1000,
+            supportLevel: 'priority',
+            apiAccess: subscription.features.some(f => f.toLowerCase().includes('api')),
+            customDomain: subscription.features.some(f => f.toLowerCase().includes('domain')),
+            analytics: 'advanced'
+          };
+          onEdit(formData);
+        }
+      } catch (error) {
+        console.error('Error fetching subscription details:', error);
+        // Fall back to using the partial data from the list
+        const formData: Partial<SubscriptionFormData> & { id: string } = {
+          id: subscription.id,
+          name: subscription.name,
+          description: subscription.description || '',
+          price: subscription.price,
+          currency: subscription.currency,
+          duration: subscription.duration as SubscriptionFormData['duration'],
+          features: subscription.features,
+          status: subscription.status as SubscriptionFormData['status'],
+          maxStores: 5,
+          maxProducts: 1000,
+          supportLevel: 'priority',
+          apiAccess: subscription.features.some(f => f.toLowerCase().includes('api')),
+          customDomain: subscription.features.some(f => f.toLowerCase().includes('domain')),
+          analytics: 'advanced'
+        };
+        onEdit(formData);
+      }
     }
   };
 
@@ -227,7 +263,7 @@ export const SubscriptionList = ({ onEdit }: SubscriptionListProps) => {
                     <PencilIcon className="h-5 w-5" />
                   </button>
                   <button
-                    onClick={() => console.log('Delete subscription:', subscription.id)}
+                    onClick={() => onDelete && onDelete(subscription.id, subscription.name)}
                     className="text-red-600 hover:text-red-900 p-1 rounded-lg hover:bg-red-50 transition-colors"
                     title="Delete subscription"
                   >

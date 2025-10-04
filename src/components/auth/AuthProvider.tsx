@@ -1,60 +1,66 @@
-import { useState, useEffect, useCallback } from 'react';
-import { AuthContext } from '../../contexts/AuthContext';
-import type { User } from '../../contexts/AuthContext';
+import { useCallback } from 'react';
+import { AuthContext, type User } from '../../contexts/AuthContext.js';
+import { apiService } from '../../services/api';
+import { useUserStore } from '../../stores/userStore';
 
 interface AuthProviderProps {
   children: React.ReactNode;
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoading, login: storeLogin, logout: storeLogout, setLoading } = useUserStore();
 
-  // Check if user is already logged in (from localStorage)
-  useEffect(() => {
-    const storedUser = localStorage.getItem('transellia_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
-  }, []);
-
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
+  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
+    setLoading(true);
     
-    // Mock authentication - in a real app, this would be an API call
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await apiService.login({ email, password });
       
-      // Mock validation - accept any non-empty email and password
-      if (email && password) {
-        const mockUser: User = {
-          id: '1',
-          name: 'Admin User',
-          email: email,
-          role: 'admin'
+      if (response.success && response.data) {
+        const { user } = response.data;
+        const token = response.token;
+        
+        // Check if user has ADMIN role
+        if (user.role !== 'ADMIN') {
+          setLoading(false);
+          return {
+            success: false,
+            message: 'Akses ditolak. Hanya administrator yang diizinkan masuk.'
+          };
+        }
+        
+        // Transform backend user data to frontend User interface
+        const frontendUser: User = {
+          id: user.id,
+          name: user.UserDetails?.name || 'Admin User',
+          email: user.email,
+          role: 'admin' // We know it's admin because we checked above
         };
         
-        setUser(mockUser);
-        localStorage.setItem('transellia_user', JSON.stringify(mockUser));
-        setIsLoading(false);
-        return true;
+        // Use zustand store to manage authentication state
+        storeLogin(frontendUser, token || '');
+        
+        return { success: true };
       } else {
-        setIsLoading(false);
-        return false;
+        setLoading(false);
+        return {
+          success: false,
+          message: response.message || 'Login gagal. Silakan periksa kembali kredensial Anda.'
+        };
       }
     } catch (error) {
-      console.log(error)
-      setIsLoading(false);
-      return false;
+      console.error('Login error:', error);
+      setLoading(false);
+      return {
+        success: false,
+        message: 'Terjadi kesalahan jaringan. Silakan coba lagi.'
+      };
     }
-  }, []);
+  }, [setLoading, storeLogin]);
 
   const logout = useCallback(() => {
-    setUser(null);
-    localStorage.removeItem('transellia_user');
-  }, []);
+    storeLogout();
+  }, [storeLogout]);
 
   const value = {
     user,

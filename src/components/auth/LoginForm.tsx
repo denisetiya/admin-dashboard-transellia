@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext.js';
 import { EnvelopeIcon, LockClosedIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 interface LoginFormProps {
@@ -23,11 +23,11 @@ export const LoginForm = ({ onLoginSuccess }: LoginFormProps) => {
       return;
     }
     
-    const success = await login(email, password);
-    if (success) {
+    const result = await login(email, password);
+    if (result.success) {
       onLoginSuccess();
     } else {
-      setError('Invalid email or password');
+      setError(result.message || 'Login gagal. Silakan periksa kembali kredensial Anda.');
     }
   };
 

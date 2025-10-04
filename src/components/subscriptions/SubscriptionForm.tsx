@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   XMarkIcon, 
   PlusIcon, 
@@ -85,20 +85,30 @@ const defaultFormData: SubscriptionFormData = {
   analytics: 'basic'
 };
 
-export const SubscriptionForm = ({ 
-  isOpen, 
-  onClose, 
-  onSubmit, 
-  initialData, 
-  mode = 'create' 
+export const SubscriptionForm = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData,
+  mode = 'create'
 }: SubscriptionFormProps) => {
-  const [formData, setFormData] = useState<SubscriptionFormData>({
+  const [formData, setFormData] = useState<SubscriptionFormData>(() => ({
     ...defaultFormData,
     ...initialData
-  });
+  }));
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Update form data when initialData changes (for edit mode)
+  useEffect(() => {
+    if (initialData) {
+      setFormData(prev => ({
+        ...prev,
+        ...initialData
+      }));
+    }
+  }, [initialData]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -151,9 +161,11 @@ export const SubscriptionForm = ({
       };
       
       await onSubmit(cleanedData);
+      // Only close modal on successful submission
       onClose();
     } catch (error) {
       console.error('Error submitting form:', error);
+      // Don't close modal on error - let user try again
     } finally {
       setIsSubmitting(false);
     }
