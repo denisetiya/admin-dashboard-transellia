@@ -92,7 +92,7 @@ export const SubscriptionsPage = () => {
   };
 
   const confirmDeleteSubscription = async () => {
-    if (!subscriptionToDelete) return;
+    if (!subscriptionToDelete) return false;
 
     setIsDeleting(true);
     try {
@@ -101,13 +101,16 @@ export const SubscriptionsPage = () => {
       if (response.success) {
         // Refresh the subscription list
         window.location.reload();
+        return true;
       } else {
         console.error('Error deleting subscription:', response.message);
         // TODO: Show error message to user
+        return false;
       }
     } catch (error) {
       console.error('Error deleting subscription:', error);
       // TODO: Show error message to user
+      return false;
     } finally {
       setIsDeleting(false);
       setDeleteConfirmOpen(false);

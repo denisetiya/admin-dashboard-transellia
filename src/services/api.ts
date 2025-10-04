@@ -92,6 +92,62 @@ export interface UpdateSubscriptionRequest {
   status?: string;
 }
 
+// User-related interfaces
+export interface User {
+  id: string;
+  email: string;
+  role: string | null;
+  subscriptionId: string | null;
+  subscription?: Subscription | null;
+  UserDetails: {
+    name: string | null;
+    imageProfile: string | null;
+    phoneNumber: string | null;
+    address: string | null;
+  } | null;
+  isEmployee: boolean | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UsersResponse {
+  users: User[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface CreateUserRequest {
+  email: string;
+  password: string;
+  role?: string;
+  isEmployee?: boolean;
+  userDetails?: {
+    name: string;
+    phoneNumber?: string;
+    address?: string;
+  };
+}
+
+export interface UpdateUserRequest {
+  email?: string;
+  role?: string;
+  isEmployee?: boolean;
+  subscriptionId?: string | null;
+  userDetails?: {
+    name?: string;
+    phoneNumber?: string;
+    address?: string;
+  };
+}
+
+export interface UpdateUserSubscriptionRequest {
+  subscriptionId: string | null;
+}
+
 class ApiService {
   private getHeaders(): HeadersInit {
     // Get token from zustand store
@@ -278,6 +334,63 @@ class ApiService {
 
   async deleteSubscription(id: string): Promise<ApiResponse<{ subscription: Subscription }>> {
     return this.delete<{ subscription: Subscription }>(`/v1/subscriptions/${id}`);
+  }
+
+  // User API methods
+  async getUsers(page: number = 1, limit: number = 10): Promise<ApiResponse<UsersResponse>> {
+    return this.get<UsersResponse>(`/v1/users?page=${page}&limit=${limit}`);
+  }
+
+  async getUserById(id: string): Promise<ApiResponse<{ user: User }>> {
+    return this.get<{ user: User }>(`/v1/users/${id}`);
+  }
+
+  async createUser(data: CreateUserRequest): Promise<ApiResponse<{ user: User }>> {
+    return this.post<{ user: User }>('/v1/users', data);
+  }
+
+  async updateUser(id: string, data: UpdateUserRequest): Promise<ApiResponse<{ user: User }>> {
+    return this.put<{ user: User }>(`/v1/users/${id}`, data);
+  }
+
+  async deleteUser(id: string): Promise<ApiResponse> {
+    return this.delete(`/v1/users/${id}`);
+  }
+
+  async updateUserSubscription(id: string, data: UpdateUserSubscriptionRequest): Promise<ApiResponse> {
+    // Using PATCH method for subscription update
+    try {
+      const response = await fetch(`${API_BASE_URL}/v1/users/${id}/subscription`, {
+        method: 'PATCH',
+        headers: this.getHeaders(),
+        body: JSON.stringify(data),
+        credentials: 'include',
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: result.message || 'Request failed',
+          errors: result.errors || [],
+        };
+      }
+
+      return {
+        success: result.success,
+        message: result.message,
+        data: result.content,
+        errors: result.errors || [],
+      };
+    } catch (error) {
+      console.error('API Error:', error);
+      return {
+        success: false,
+        message: 'Network error. Please try again.',
+        errors: [],
+      };
+    }
   }
 }
 

@@ -3,13 +3,14 @@ import { XMarkIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 interface ConfirmDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<boolean> | boolean;
   title: string;
   message: string;
   confirmText?: string;
   cancelText?: string;
   type?: 'danger' | 'warning' | 'info';
   isLoading?: boolean;
+  autoClose?: boolean; // New prop to control auto-close behavior
 }
 
 export const ConfirmDialog = ({
@@ -21,13 +22,22 @@ export const ConfirmDialog = ({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   type = 'danger',
-  isLoading = false
+  isLoading = false,
+  autoClose = true // Default to true for backward compatibility
 }: ConfirmDialogProps) => {
   if (!isOpen) return null;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!isLoading) {
-      onConfirm();
+      try {
+        const result = await onConfirm();
+        // If autoClose is enabled and the operation was successful, close the dialog
+        if (autoClose && result !== false) {
+          onClose();
+        }
+      } catch (error) {
+        console.error('Error in confirmation dialog:', error);
+      }
     }
   };
 
@@ -71,7 +81,7 @@ export const ConfirmDialog = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4">
         {/* Backdrop */}
         <div 
