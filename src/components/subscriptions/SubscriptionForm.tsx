@@ -37,6 +37,37 @@ export interface SubscriptionFormData {
   analytics: 'basic' | 'advanced' | 'enterprise';
 }
 
+export interface Subscription {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  duration: {
+    value: number;
+    unit: string;
+  };
+  features: string[];
+  status: string;
+  subscribersCount?: number;
+  totalRevenue?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubscriptionResponse {
+  success: boolean;
+  data: {
+    subscriptions: Subscription[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+    };
+  };
+}
+
 const defaultFormData: SubscriptionFormData = {
   name: '',
   description: '',
@@ -266,7 +297,7 @@ export const SubscriptionForm = ({
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-gray-500 sm:text-sm">Rp</span>
+                      <span className="text-gray-500 sm:text-sm">$</span>
                     </div>
                     <input
                       id="price"
@@ -326,6 +357,25 @@ export const SubscriptionForm = ({
                     <option value="years">Years</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Currency */}
+              <div>
+                <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-2">
+                  Currency
+                </label>
+                <select
+                  id="currency"
+                  value={formData.currency}
+                  onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
+                  className="block w-full max-w-xs rounded-xl border-0 px-4 py-3 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 transition-colors"
+                >
+                  <option value="USD">USD - US Dollar</option>
+                  <option value="EUR">EUR - Euro</option>
+                  <option value="GBP">GBP - British Pound</option>
+                  <option value="JPY">JPY - Japanese Yen</option>
+                  <option value="IDR">IDR - Indonesian Rupiah</option>
+                </select>
               </div>
 
               {/* Trial Period */}
